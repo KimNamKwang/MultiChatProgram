@@ -191,7 +191,7 @@ namespace MultiChatProgram
             // 텍스트로 변환한다.
             string text = Encoding.UTF8.GetString(obj.Buffer);
 
-            // 0x01 기준으로 짜른다.
+            // \x01 기준으로 자른다.
             // tokens[0] - 보낸 사람 IP
             // tokens[1] - 보낸 메세지
             string[] tokens = text.Split('\x01');
@@ -274,6 +274,8 @@ namespace MultiChatProgram
                     try { socket.Send(bDts); }
                     catch (Exception exception)
                     {
+                        Console.Write(exception);
+
                         // 오류 발생하면 전송 취소하고 리스트에서 삭제한다.
                         try { socket.Dispose(); } catch { }
                         connectedClients.RemoveAt(i);
@@ -358,7 +360,6 @@ namespace MultiChatProgram
             foreach (string file in files)
             {
                 listBoxForSendData.Items.Add(file);
-                //listBoxForSendData.Items.Add(Path.GetFileName(file));
             }
 
         }
@@ -375,27 +376,58 @@ namespace MultiChatProgram
 
         private void btnSendFile_Click(object sender, EventArgs e)
         {
+
+            // 파일 전송 요청 메시지를 서버에게 전송합니다.
+            byte[] readyMessage = Encoding.UTF8.GetBytes("file_ready\x01" + Path.GetFileName(openFileDialog1.FileName) + "\x01");
+
+            // 연결된 모든 클라이언트에게 전송한다.
+            for (int i = connectedClients.Count - 1; i >= 0; i--)
+            {
+                Socket socket = connectedClients[i];
+                try { socket.Send(readyMessage); }
+                catch (Exception exception)
+                {
+                    Console.Write(exception);
+                    // 오류 발생하면 전송 취소하고 리스트에서 삭제한다.
+                    try { socket.Dispose(); } catch { }
+                    connectedClients.RemoveAt(i);
+                }
+            }
+
+            
+
             // 파일을 읽어서  상대방에게 전송합니다.
             using (FileStream fileStream = new FileStream(openFileDialog1.FileName, FileMode.Open, FileAccess.ReadWrite))
             {
                 byte[] buffer = new byte[8192];
                 int bytesRead;
+                // 아래 변수는 progressbar를 위해서 생성.
+                long totalBytes = fileStream.Length;
+                long bytesSent = 0;
                 while ((bytesRead = fileStream.Read(buffer, 0, buffer.Length)) > 0)
                 {
                     //보낼 데이터 사이즈를 상대방에게 미리 공유
-                    dataSizeForFile = BitConverter.GetBytes(buffer.Length);
-                    fileStream.Write(dataSizeForFile, 0, dataSizeForFile.Length);
+                    //dataSizeForFile = BitConverter.GetBytes(buffer.Length);
+                    //fileStream.Write(dataSizeForFile, 0, dataSizeForFile.Length);
 
                     //데이터 전송
                     fileStream.Write(buffer, 0, buffer.Length);
+
                     // 연결된 모든 클라이언트에게 전송한다.
                     for (int i = connectedClients.Count - 1; i >= 0; i--)
                     {
                         Socket socket = connectedClients[i];
 
-                        try { socket.Send(buffer/*, 0, bytesRead, SocketFlags.None*/); }
+                        try {
+                            socket.Send(buffer, 0, bytesRead, SocketFlags.None);
+                            bytesSent += bytesRead;
+                            int progress = (int)(bytesSent * 100 / totalBytes);
+                            // ProgressBar 업데이트
+                            progressBarForFile.Invoke((MethodInvoker)delegate { progressBarForFile.Value = progress; });
+                        }
                         catch (Exception exception)
                         {
+                            Console.Write(exception);
                             // 오류 발생하면 전송 취소하고 리스트에서 삭제한다.
                             try { socket.Dispose(); } catch { }
                             connectedClients.RemoveAt(i);
@@ -405,11 +437,16 @@ namespace MultiChatProgram
                 }
 
 
-
-
-
-
             }
+        }
+
+      
+
+
+
+        private void progressBarForFile_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

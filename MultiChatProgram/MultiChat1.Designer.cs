@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             this.fileSendBox = new System.Windows.Forms.GroupBox();
+            this.listBoxForSendData = new System.Windows.Forms.ListBox();
             this.btnSendFile = new System.Windows.Forms.Button();
             this.groupBoxForProgress = new System.Windows.Forms.GroupBox();
             this.progressBarForFile = new System.Windows.Forms.ProgressBar();
@@ -58,7 +59,6 @@
             this.serverBtn = new System.Windows.Forms.RadioButton();
             this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
             this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
-            this.listBoxForSendData = new System.Windows.Forms.ListBox();
             this.fileSendBox.SuspendLayout();
             this.groupBoxForProgress.SuspendLayout();
             this.dataSendBox.SuspendLayout();
@@ -83,6 +83,16 @@
             this.fileSendBox.TabIndex = 7;
             this.fileSendBox.TabStop = false;
             this.fileSendBox.Text = "파일전송";
+            // 
+            // listBoxForSendData
+            // 
+            this.listBoxForSendData.FormattingEnabled = true;
+            this.listBoxForSendData.ItemHeight = 12;
+            this.listBoxForSendData.Location = new System.Drawing.Point(10, 36);
+            this.listBoxForSendData.Name = "listBoxForSendData";
+            this.listBoxForSendData.Size = new System.Drawing.Size(520, 88);
+            this.listBoxForSendData.TabIndex = 9;
+            this.listBoxForSendData.SelectedIndexChanged += new System.EventHandler(this.listBoxForSendData_SelectedIndexChanged);
             // 
             // btnSendFile
             // 
@@ -110,6 +120,7 @@
             this.progressBarForFile.Name = "progressBarForFile";
             this.progressBarForFile.Size = new System.Drawing.Size(239, 31);
             this.progressBarForFile.TabIndex = 0;
+            this.progressBarForFile.Click += new System.EventHandler(this.progressBarForFile_Click);
             // 
             // labelForCountFile
             // 
@@ -365,16 +376,6 @@
             // 
             this.openFileDialog1.FileName = "openFileDialog1";
             this.openFileDialog1.FileOk += new System.ComponentModel.CancelEventHandler(this.openFileDialog1_FileOk);
-            // 
-            // listBoxForSendData
-            // 
-            this.listBoxForSendData.FormattingEnabled = true;
-            this.listBoxForSendData.ItemHeight = 12;
-            this.listBoxForSendData.Location = new System.Drawing.Point(10, 36);
-            this.listBoxForSendData.Name = "listBoxForSendData";
-            this.listBoxForSendData.Size = new System.Drawing.Size(520, 88);
-            this.listBoxForSendData.TabIndex = 9;
-            this.listBoxForSendData.SelectedIndexChanged += new System.EventHandler(this.listBoxForSendData_SelectedIndexChanged);
             // 
             // MultiChat1
             // 

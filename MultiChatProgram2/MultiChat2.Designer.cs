@@ -57,6 +57,7 @@
             this.positionSelectBox = new System.Windows.Forms.GroupBox();
             this.clientBtn = new System.Windows.Forms.RadioButton();
             this.serverBtn = new System.Windows.Forms.RadioButton();
+            this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
             this.fileSendBox.SuspendLayout();
             this.groupBoxForProgress.SuspendLayout();
             this.dataSendBox.SuspendLayout();
@@ -365,6 +366,11 @@
             this.serverBtn.UseVisualStyleBackColor = true;
             this.serverBtn.CheckedChanged += new System.EventHandler(this.serverBtn_CheckedChanged);
             // 
+            // openFileDialog1
+            // 
+            this.openFileDialog1.FileName = "openFileDialog1";
+            this.openFileDialog1.FileOk += new System.ComponentModel.CancelEventHandler(this.openFileDialog1_FileOk);
+            // 
             // MultiChat2
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
@@ -419,6 +425,7 @@
         private System.Windows.Forms.GroupBox positionSelectBox;
         private System.Windows.Forms.RadioButton clientBtn;
         private System.Windows.Forms.RadioButton serverBtn;
+        private System.Windows.Forms.OpenFileDialog openFileDialog1;
     }
 }
 

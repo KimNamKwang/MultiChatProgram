@@ -211,39 +211,51 @@ namespace MultiChatProgram2
             }
 
 
-     
-
-
 
             // 텍스트로 변환한다.
             string text = Encoding.UTF8.GetString(obj.Buffer);
 
-            // 0x01 기준으로 짜른다.
+            // 0x01 기준으로 자른다.
             // tokens[0] - 보낸 사람 IP
-            // tokens[1] - 보낸 메세지
+            // tokens[1] - 보낸 메세지            
             string[] tokens = text.Split('\x01');
-            string ip = tokens[0];
-            string msg = tokens[1];
 
-            // 텍스트박스에 추가해준다.
-            // 비동기식으로 작업하기 때문에 폼의 UI 스레드에서 작업을 해줘야 한다.
-            // 따라서 대리자를 통해 처리한다.
-            AppendText(textBoxForChatView, string.Format("[받음]{0}: {1}", ip, msg));
-
-            // for을 통해 "역순"으로 클라이언트에게 데이터를 보낸다.
-            for (int i = connectedClients.Count - 1; i >= 0; i--)
+            // 메시지인 경우
+            if (!tokens[0].Equals("file_ready"))
             {
-                Socket socket = connectedClients[i];
-                if (socket != obj.WorkingSocket)
+
+                string ip = tokens[0];
+                string msg = tokens[1];
+
+                // 텍스트박스에 추가해준다.
+                // 비동기식으로 작업하기 때문에 폼의 UI 스레드에서 작업을 해줘야 한다.
+                // 따라서 대리자를 통해 처리한다.
+                AppendText(textBoxForChatView, string.Format("[받음]{0}: {1}", ip, msg));
+
+                // for을 통해 "역순"으로 클라이언트에게 데이터를 보낸다.
+                for (int i = connectedClients.Count - 1; i >= 0; i--)
                 {
-                    try { socket.Send(obj.Buffer); }
-                    catch
+                    Socket socket = connectedClients[i];
+                    if (socket != obj.WorkingSocket)
                     {
-                        // 오류 발생하면 전송 취소하고 리스트에서 삭제한다.
-                        try { socket.Dispose(); } catch { }
-                        connectedClients.RemoveAt(i);
+                        try { socket.Send(obj.Buffer); }
+                        catch
+                        {
+                            // 오류 발생하면 전송 취소하고 리스트에서 삭제한다.
+                            try { socket.Dispose(); } catch { }
+                            connectedClients.RemoveAt(i);
+                        }
                     }
                 }
+
+            }
+            // 파일인 경우
+            else if (tokens[0].Equals("file_ready"))
+            {
+                string fileName = tokens[1];
+                ReceiveFile(mainSock, fileName);
+                return;
+
             }
 
             // 데이터를 받은 후엔 다시 버퍼를 비워주고 같은 방법으로 수신을 대기한다.
@@ -252,6 +264,57 @@ namespace MultiChatProgram2
             // 수신 대기
             obj.WorkingSocket.BeginReceive(obj.Buffer, 0, 4096, 0, DataReceived, obj);
         }
+
+
+        // 파일을 받는 메소드
+        private void ReceiveFile(Socket serverSocket, string fileName)
+        {
+
+            // 파일 전송 준비 완료 메시지를 서버로부터 받습니다.
+            byte[] readyMessage = new byte[8192];
+            int bytesReceived = serverSocket.Receive(readyMessage);
+            string message = Encoding.UTF8.GetString(readyMessage, 0, bytesReceived);
+            //string[] tokens = message.Split('\x01');
+            //if (/*tokens.Length != 2 ||*/ tokens[0] != "file_ready")
+            //{
+            //    // 파일 전송 준비 완료 메시지가 아니면 메소드를 종료합니다.
+            //    return;
+            //}
+            //string fileName = tokens[1];
+
+            // 파일을 수신합니다.
+            using (FileStream fileStream = new FileStream(fileName, FileMode.Create, FileAccess.ReadWrite))
+            {
+                byte[] buffer = new byte[8192];
+                int bytesRead;
+                long totalBytes = fileStream.Length;
+                 bytesReceived = 0;
+                //while ((bytesRead = serverSocket.Receive(buffer)) > 0)
+                while ((bytesRead = serverSocket.Receive(buffer)) > 0)
+                {
+                    fileStream.Write(buffer, 0, bytesRead);
+                    bytesReceived += bytesRead;
+                    int progress = (int)(bytesReceived * 100 / totalBytes);
+                    // ProgressBar 업데이트
+                    progressBarForFile.Invoke((MethodInvoker)delegate { progressBarForFile.Value = progress; });
+
+                    AppendText(richTextBoxForReceiveFile, fileName);
+
+                }
+            }
+
+            // 파일 전송 완료 메시지를 서버로부터 받습니다.
+            //byte[] doneMessage = new byte[4096];
+            //bytesReceived = serverSocket.Receive(doneMessage);
+            //message = Encoding.UTF8.GetString(doneMessage, 0, bytesReceived);
+            //if (message != "file_done")
+            //{
+            //    // 파일 전송 완료 메시지가 아니면 메소드를 종료합니다.
+            //    return;
+            //}
+
+        }
+
 
 
         private void btnSameIP_Click(object sender, EventArgs e)
@@ -301,6 +364,7 @@ namespace MultiChatProgram2
                     try { socket.Send(bDts); }
                     catch (Exception exception)
                     {
+                        Console.Write(exception);
                         // 오류 발생하면 전송 취소하고 리스트에서 삭제한다.
                         try { socket.Dispose(); } catch { }
                         connectedClients.RemoveAt(i);
@@ -342,6 +406,11 @@ namespace MultiChatProgram2
 
             }
             Application.Exit();
+        }
+
+        private void openFileDialog1_FileOk(object sender, CancelEventArgs e)
+        {
+
         }
     }
 }

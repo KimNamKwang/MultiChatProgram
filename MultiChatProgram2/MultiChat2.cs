@@ -274,13 +274,13 @@ namespace MultiChatProgram2
             byte[] readyMessage = new byte[8192];
             int bytesReceived = serverSocket.Receive(readyMessage);
             string message = Encoding.UTF8.GetString(readyMessage, 0, bytesReceived);
-            //string[] tokens = message.Split('\x01');
+            string[] tokens = message.Split('\x01');
             //if (/*tokens.Length != 2 ||*/ tokens[0] != "file_ready")
             //{
             //    // 파일 전송 준비 완료 메시지가 아니면 메소드를 종료합니다.
             //    return;
             //}
-            //string fileName = tokens[1];
+             //fileName = tokens[1];
 
             // 파일을 수신합니다.
             using (FileStream fileStream = new FileStream(fileName, FileMode.Create, FileAccess.ReadWrite))
@@ -289,29 +289,30 @@ namespace MultiChatProgram2
                 int bytesRead;
                 long totalBytes = fileStream.Length;
                  bytesReceived = 0;
-                //while ((bytesRead = serverSocket.Receive(buffer)) > 0)
                 while ((bytesRead = serverSocket.Receive(buffer)) > 0)
-                {
+                    //while ((bytesRead = fileStream.Read(buffer, 0, buffer.Length)) > 0)
+                    {
                     fileStream.Write(buffer, 0, bytesRead);
                     bytesReceived += bytesRead;
                     int progress = (int)(bytesReceived * 100 / totalBytes);
                     // ProgressBar 업데이트
                     progressBarForFile.Invoke((MethodInvoker)delegate { progressBarForFile.Value = progress; });
-
                     AppendText(richTextBoxForReceiveFile, fileName);
 
+
                 }
+
             }
 
             // 파일 전송 완료 메시지를 서버로부터 받습니다.
-            //byte[] doneMessage = new byte[4096];
-            //bytesReceived = serverSocket.Receive(doneMessage);
-            //message = Encoding.UTF8.GetString(doneMessage, 0, bytesReceived);
-            //if (message != "file_done")
-            //{
-            //    // 파일 전송 완료 메시지가 아니면 메소드를 종료합니다.
-            //    return;
-            //}
+            byte[] doneMessage = new byte[4096];
+            bytesReceived = serverSocket.Receive(doneMessage);
+            message = Encoding.UTF8.GetString(doneMessage, 0, bytesReceived);
+            if (message != "file_done")
+            {
+                // 파일 전송 완료 메시지가 아니면 메소드를 종료합니다.
+                return;
+            }
 
         }
 

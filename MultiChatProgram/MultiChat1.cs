@@ -20,6 +20,7 @@ namespace MultiChatProgram
         Socket mainSock;
         IPAddress thisAddress;
 
+
         // 파일전송을 위해 생성.
         //byte[] data;
         byte[] dataSizeForFile;
@@ -179,7 +180,7 @@ namespace MultiChatProgram
             AsyncObject obj = (AsyncObject)ar.AsyncState;
 
             // 데이터 수신을 끝낸다.
-             int received = obj.WorkingSocket.EndReceive(ar);
+            int received = obj.WorkingSocket.EndReceive(ar);
 
             // 받은 데이터가 없으면(연결끊어짐) 끝낸다.
             if (received <= 0)
@@ -243,8 +244,9 @@ namespace MultiChatProgram
 
         }
 
+
         private void btnSendChat_Click(object sender, EventArgs e)
-        {
+        {         
             // 서버가 대기중인지 확인한다.
             if (!mainSock.IsBound)
             {
@@ -377,7 +379,8 @@ namespace MultiChatProgram
         private void btnSendFile_Click(object sender, EventArgs e)
         {
 
-            // 파일 전송 요청 메시지를 서버에게 전송합니다.
+
+            //파일 전송 요청 메시지를 서버에게 전송합니다.
             byte[] readyMessage = Encoding.UTF8.GetBytes("file_ready\x01" + Path.GetFileName(openFileDialog1.FileName) + "\x01");
 
             // 연결된 모든 클라이언트에게 전송한다.
@@ -394,7 +397,31 @@ namespace MultiChatProgram
                 }
             }
 
-            
+            /*
+             * 테스트하는 부분
+            //string filePath = openFileDialog1.FileName;
+
+            //TcpClient tcpClient = new TcpClient("192.168.50.37", 8080);
+            //using (NetworkStream stream = tcpClient.GetStream())
+            //using (FileStream fileStream = File.OpenRead(filePath))
+            //{
+            //    byte[] fileNameBytes = Encoding.UTF8.GetBytes(Path.GetFileName(filePath));
+            //    byte[] fileData = new byte[fileStream.Length];
+
+            //    fileStream.Read(fileData, 0, fileData.Length);
+
+            //    byte[] fileNameLength = BitConverter.GetBytes(fileNameBytes.Length);
+            //    byte[] fileLength = BitConverter.GetBytes(fileData.Length);
+
+            //    stream.Write(fileNameLength, 0, fileNameLength.Length);
+            //    stream.Write(fileNameBytes, 0, fileNameBytes.Length);
+            //    stream.Write(fileLength, 0, fileLength.Length);
+            //    stream.Write(fileData, 0, fileData.Length);
+            //}
+
+            //tcpClient.Close();
+            */
+
 
             // 파일을 읽어서  상대방에게 전송합니다.
             using (FileStream fileStream = new FileStream(openFileDialog1.FileName, FileMode.Open, FileAccess.ReadWrite))
@@ -407,8 +434,8 @@ namespace MultiChatProgram
                 while ((bytesRead = fileStream.Read(buffer, 0, buffer.Length)) > 0)
                 {
                     //보낼 데이터 사이즈를 상대방에게 미리 공유
-                    //dataSizeForFile = BitConverter.GetBytes(buffer.Length);
-                    //fileStream.Write(dataSizeForFile, 0, dataSizeForFile.Length);
+                    dataSizeForFile = BitConverter.GetBytes(buffer.Length);
+                    fileStream.Write(dataSizeForFile, 0, dataSizeForFile.Length);
 
                     //데이터 전송
                     fileStream.Write(buffer, 0, buffer.Length);
@@ -417,8 +444,8 @@ namespace MultiChatProgram
                     for (int i = connectedClients.Count - 1; i >= 0; i--)
                     {
                         Socket socket = connectedClients[i];
-
-                        try {
+                        try
+                        {
                             socket.Send(buffer, 0, bytesRead, SocketFlags.None);
                             bytesSent += bytesRead;
                             int progress = (int)(bytesSent * 100 / totalBytes);
@@ -438,9 +465,37 @@ namespace MultiChatProgram
 
 
             }
+
         }
 
-      
+
+
+
+
+
+        private void HandleFileRequest(Socket clientSocket)
+        {
+
+
+            // 파일 전송 준비 완료 메시지를 클라이언트에게 보냅니다.
+            byte[] readyMessage = Encoding.UTF8.GetBytes("file_ready|" + Path.GetFileName(openFileDialog1.FileName));
+            clientSocket.Send(readyMessage);
+
+            // 파일을 읽어서 클라이언트에게 전송합니다.
+            using (FileStream fileStream = new FileStream(openFileDialog1.FileName, FileMode.Open, FileAccess.Read))
+            {
+                byte[] buffer = new byte[4096];
+                int bytesRead;
+                while ((bytesRead = fileStream.Read(buffer, 0, buffer.Length)) > 0)
+                {
+                    clientSocket.Send(buffer, 0, bytesRead, SocketFlags.None);
+                }
+            }
+
+            // 파일 전송 완료 메시지를 클라이언트에게 보냅니다.
+            byte[] doneMessage = Encoding.UTF8.GetBytes("file_done");
+            clientSocket.Send(doneMessage);
+        }
 
 
 
